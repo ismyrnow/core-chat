@@ -16,11 +16,15 @@ namespace CoreChat.Models
             _id = 0;
         }
 
-        public void Add(User user)
+        public User Add(User user)
         {
             user.ID = _id;
+            user.Token = Guid.NewGuid().ToString();
+
             _users[user.ID] = user;
             _id++;
+
+            return user;
         }
 
         public User Find(int id)

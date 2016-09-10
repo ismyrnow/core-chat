@@ -7,7 +7,7 @@ namespace CoreChat.Models
 {
     public interface IUserRepository
     {
-        void Add(User user);
+        User Add(User user);
         User Find(int id);
         void Update(User user);
     }
