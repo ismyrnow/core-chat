@@ -14,6 +14,16 @@ namespace CoreChat.Models
         public UserRepository()
         {
             _id = 0;
+
+            // Add a user with a consistent token for testing.
+            _users.Add(new User
+            {
+                ID = _id++,
+                Name = "Ishmael",
+                Email = "ismyrnow@gmail.com",
+                Password = "foo",
+                Token = "bb5bc606-77e7-4832-afc6-acf895cd5099"
+            });
         }
 
         public User Add(User user)
