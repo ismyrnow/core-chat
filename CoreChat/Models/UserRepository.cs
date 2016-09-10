@@ -9,7 +9,7 @@ namespace CoreChat.Models
     public class UserRepository : IUserRepository
     {
         private int _id;
-        private static ConcurrentDictionary<int, User> _users = new ConcurrentDictionary<int, User>();
+        private static List<User> _users = new List<User>();
 
         public UserRepository()
         {
@@ -21,22 +21,26 @@ namespace CoreChat.Models
             user.ID = _id;
             user.Token = Guid.NewGuid().ToString();
 
-            _users[user.ID] = user;
+            _users.Add(user);
             _id++;
 
             return user;
         }
 
-        public User Find(int id)
+        public User FindByToken(string token)
         {
-            User user;
-            _users.TryGetValue(id, out user);
-            return user;
+            return _users.Find(x => x.Token == token);
+        }
+
+        public User FindByEmail(string email)
+        {
+            return _users.Find(x => x.Email == email);
         }
 
         public void Update(User user)
         {
-            _users[user.ID] = user;
+            var storedUser = _users.Find(x => x.Email == user.Email);
+            storedUser = user;
         }
     }
 }

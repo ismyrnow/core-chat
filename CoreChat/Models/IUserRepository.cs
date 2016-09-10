@@ -8,7 +8,8 @@ namespace CoreChat.Models
     public interface IUserRepository
     {
         User Add(User user);
-        User Find(int id);
+        User FindByToken(string token);
+        User FindByEmail(string email);
         void Update(User user);
     }
 }

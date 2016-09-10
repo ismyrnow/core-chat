@@ -9,7 +9,7 @@ using CoreChat.Models;
 
 namespace CoreChat.Controllers
 {
-    [Route("api/[controller]")]
+    [Route("[controller]")]
     public class UsersController : Controller
     {
         public IUserRepository Users { get; set; }
@@ -37,7 +37,74 @@ namespace CoreChat.Controllers
             // The repository adds an ID and Token, so we need a response from it.
             user = Users.Add(user);
 
-            var response = new
+            return Json(BuildUserResponse(user));
+        }
+
+        [HttpPost("Login")]
+        public IActionResult Login([FromBody] RegisterUser login)
+        {
+            var user = Users.FindByEmail(login.Email);
+
+            if (user == null || login.Password != user.Password)
+            {
+                return new UnauthorizedResult();
+            }
+
+            return Json(BuildUserResponse(user));
+        }
+
+        [HttpGet("Me")]
+        public IActionResult ViewMe()
+        {
+            User user;
+            try
+            {
+                string auth = Request.Headers["Authorization"];
+                var token = auth.Replace("Bearer ", "");
+                user = Users.FindByToken(token);
+                if (user == null)
+                {
+                    throw new Exception();
+                }
+            }
+            catch
+            {
+                return new UnauthorizedResult();
+            }
+
+            return Json(BuildUserResponse(user));
+        }
+
+        [HttpPut("Me")]
+        public IActionResult EditMe([FromBody] RegisterUser edit)
+        {
+            User user;
+            try
+            {
+                string auth = Request.Headers["Authorization"];
+                var token = auth.Replace("Bearer ", "");
+                user = Users.FindByToken(token);
+                if (user == null)
+                {
+                    throw new Exception();
+                }
+            }
+            catch
+            {
+                return new UnauthorizedResult();
+            }
+
+            user.Name = edit.Name;
+            user.Email = edit.Email;
+
+            Users.Update(user);
+
+            return Json(BuildUserResponse(user));
+        }
+
+        private object BuildUserResponse(User user)
+        {
+            return new
             {
                 success = true,
                 data = new
@@ -48,8 +115,6 @@ namespace CoreChat.Controllers
                     name = user.Name
                 }
             };
-
-            return Json(response);
         }
     }
 }
