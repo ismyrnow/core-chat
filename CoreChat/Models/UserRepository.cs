@@ -15,14 +15,24 @@ namespace CoreChat.Models
         {
             _id = 0;
 
-            // Add a user with a consistent token for testing.
+            // Add test users.
+
             _users.Add(new User
             {
                 ID = _id++,
-                Name = "Ishmael",
-                Email = "ismyrnow@gmail.com",
+                Name = "Alice",
+                Email = "alice@example.com",
                 Password = "foo",
                 Token = "bb5bc606-77e7-4832-afc6-acf895cd5099"
+            });
+
+            _users.Add(new User
+            {
+                ID = _id++,
+                Name = "Bob",
+                Email = "bob@example.com",
+                Password = "foo",
+                Token = "e7e1e36c-f184-4832-944f-c52720c75f1"
             });
         }
 
@@ -35,6 +45,11 @@ namespace CoreChat.Models
             _id++;
 
             return user;
+        }
+
+        public User FindByID(int id)
+        {
+            return _users.Find(x => x.ID == id);
         }
 
         public User FindByToken(string token)
