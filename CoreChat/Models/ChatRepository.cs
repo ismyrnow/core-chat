@@ -10,18 +10,18 @@ namespace CoreChat.Models
         private IUserRepository Users;
         private List<Chat> _chats = new List<Chat>();
         private List<Message> _messages = new List<Message>();
-        private int _id;
+        private int _chatId = 0;
+        private int _messageId = 0;
 
         public ChatRepository(IUserRepository users)
         {
             Users = users;
-            _id = 0;
 
             // Add test chats.
 
             _chats.Add(new Chat
             {
-                ID = _id++,
+                ID = _chatId++,
                 Created = DateTime.Now,
                 LastMessage = null,
                 Name = "Alpha",
@@ -30,19 +30,37 @@ namespace CoreChat.Models
 
             _chats.Add(new Chat
             {
-                ID = _id++,
+                ID = _chatId++,
                 Created = DateTime.Now,
                 LastMessage = null,
                 Name = "Bravo",
                 UserID = 1
             });
+
+            _messages.Add(new Message
+            {
+                ID = _messageId++,
+                Created = DateTime.Now,
+                ChatID = 0,
+                UserID = 1,
+                Content = "Hey Alice, it's Bob. How's it going?"
+            });
+
+            _messages.Add(new Message
+            {
+                ID = _messageId++,
+                Created = DateTime.Now,
+                ChatID = 0,
+                UserID = 0,
+                Content = "Good. Just chilling."
+            });
         }
 
-        public Chat Add(Chat newChat)
+        public Chat AddChat(Chat newChat)
         {
             var chat = new Chat
             {
-                ID = _id++,
+                ID = _chatId++,
                 Name = newChat.Name,
                 UserID = newChat.UserID,
                 Created = DateTime.Now,
@@ -54,25 +72,84 @@ namespace CoreChat.Models
             return chat;
         }
 
+        public Message AddMessage(Message newMessage)
+        {
+            var message = new Message
+            {
+                ID = _messageId++,
+                Content = newMessage.Content,
+                UserID = newMessage.UserID,
+                Created = DateTime.Now
+            };
+
+            _messages.Add(message);
+
+            return message;
+        }
+
         public PagedResults<Chat> GetChats(string query, int page, int limit)
         {
-            // Note: This does not protect against invalid page or limit values.
-
-            var allChats = _chats.OrderBy(x => x.ID)
-                .Where(x => x.Name.Contains(query));
-
-            var allCount = allChats.Count();
-            var pageCount = (int)Math.Ceiling((double)allCount / limit);
-            var hasNextPage = pageCount > page;
-            var hasPrevPage = page > 1;
-
-            var pagedChats = allChats
-                .Skip(limit * (page - 1))
-                .Take(limit);
-
-            foreach(var chat in pagedChats)
+            if (page < 1)
             {
-                chat.User = Users.FindByID(chat.UserID);
+                page = 1;
+            }
+
+            if (limit < 1)
+            {
+                limit = 0;
+            }
+
+            IEnumerable<Chat> allRecords = _chats.OrderByDescending(x => x.ID);
+
+            // Filter based on name.
+            if (!String.IsNullOrEmpty(query))
+            {
+                allRecords = allRecords.Where(x => x.Name.ToLower().Contains(query.ToLower()));
+            }
+
+            // Set some defaults for pagination (assumes limit = 0).
+            var allCount = allRecords.Count();
+            var pageCount = 1;
+            var hasNextPage = false;
+            var hasPrevPage = false;
+            var pagedRecords = allRecords;
+
+            if (limit != 0)
+            {
+                pageCount = (int)Math.Ceiling((double)allCount / limit);
+                hasNextPage = pageCount > page;
+                hasPrevPage = page > 1;
+                pagedRecords = allRecords
+                    .Skip(limit * (page - 1))
+                    .Take(limit);
+            }
+
+            foreach(var chat in pagedRecords)
+            {
+                // Populate the chat user.
+                var chatUser = Users.FindByID(chat.UserID);
+                chat.User = new SimpleUser
+                {
+                    ID = chatUser.ID,
+                    Name = chatUser.Name
+                };
+
+                // Populate the last message.
+                var lastMessage = _messages.Where(x => x.ChatID == chat.ID)
+                    .OrderBy(x => x.Created)
+                    .LastOrDefault();
+                chat.LastMessage = lastMessage;
+
+                // Populate last message user.
+                if (chat.LastMessage != null)
+                {
+                    var lastMessageUser = Users.FindByID(lastMessage.UserID);
+                    chat.LastMessage.User = new SimpleUser
+                    {
+                        ID = lastMessageUser.ID,
+                        Name = lastMessageUser.Name
+                    };
+                }
             }
 
             var pagination = new Pagination
@@ -87,26 +164,52 @@ namespace CoreChat.Models
 
             return new PagedResults<Chat>
             {
-                Data = pagedChats,
+                Data = pagedRecords,
                 Pagination = pagination
             };
         }
 
         public PagedResults<Message> GetMessages(int chatId, int page, int limit)
         {
-            // Note: This does not protect against invalid page or limit values.
+            if (page < 1)
+            {
+                page = 1;
+            }
 
-            var allMessages = _messages.OrderBy(x => x.ID)
+            if (limit < 1)
+            {
+                limit = 0;
+            }
+
+            IEnumerable<Message> allRecords = _messages.OrderByDescending(x => x.ID)
                 .Where(x => x.ChatID == chatId);
 
-            var allCount = allMessages.Count();
-            var pageCount = (int)Math.Ceiling((double)allCount / limit);
-            var hasNextPage = pageCount > page;
-            var hasPrevPage = page > 1;
+            // Set some defaults for pagination (assumes limit = 0).
+            var allCount = allRecords.Count();
+            var pageCount = 1;
+            var hasNextPage = false;
+            var hasPrevPage = false;
+            var pagedRecords = allRecords;
 
-            var pagedMessages = allMessages
-                .Skip(limit * (page - 1))
-                .Take(limit);
+            if (limit != 0)
+            {
+                pageCount = (int)Math.Ceiling((double)allCount / limit);
+                hasNextPage = pageCount > page;
+                hasPrevPage = page > 1;
+                pagedRecords = allRecords
+                    .Skip(limit * (page - 1))
+                    .Take(limit);
+            }
+
+            foreach (var record in pagedRecords)
+            {
+                var user = Users.FindByID(record.UserID);
+                record.User = new SimpleUser
+                {
+                    ID = user.ID,
+                    Name = user.Name
+                };
+            }
 
             var pagination = new Pagination
             {
@@ -120,7 +223,7 @@ namespace CoreChat.Models
 
             return new PagedResults<Message>
             {
-                Data = pagedMessages,
+                Data = pagedRecords,
                 Pagination = pagination
             };
         }
