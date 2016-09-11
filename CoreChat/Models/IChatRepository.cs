@@ -8,8 +8,8 @@ namespace CoreChat.Models
     public interface IChatRepository
     {
         Chat AddChat(Chat chat);
-        Message AddMessage(Message message);
+        ChatMessage AddMessage(ChatMessage message);
         PagedResults<Chat> GetChats(string query, int page, int limit);
-        PagedResults<Message> GetMessages(int chatId, int page, int limit);
+        PagedResults<ChatMessage> GetMessages(int chatId, int page, int limit);
     }
 }

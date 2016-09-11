@@ -9,7 +9,7 @@ namespace CoreChat.Models
     {
         private IUserRepository Users;
         private List<Chat> _chats = new List<Chat>();
-        private List<Message> _messages = new List<Message>();
+        private List<ChatMessage> _messages = new List<ChatMessage>();
         private int _chatId = 0;
         private int _messageId = 0;
 
@@ -37,22 +37,22 @@ namespace CoreChat.Models
                 UserID = 1
             });
 
-            _messages.Add(new Message
+            _messages.Add(new ChatMessage
             {
                 ID = _messageId++,
                 Created = DateTime.Now,
                 ChatID = 0,
                 UserID = 1,
-                Content = "Hey Alice, it's Bob. How's it going?"
+                Message = "Hey Alice, it's Bob. How's it going?"
             });
 
-            _messages.Add(new Message
+            _messages.Add(new ChatMessage
             {
                 ID = _messageId++,
                 Created = DateTime.Now,
                 ChatID = 0,
                 UserID = 0,
-                Content = "Good. Just chilling."
+                Message = "Good. Just chilling."
             });
         }
 
@@ -69,20 +69,37 @@ namespace CoreChat.Models
 
             _chats.Add(chat);
 
+            // Populate user.
+            var user = Users.FindByID(chat.UserID);
+            chat.User = new SimpleUser
+            {
+                ID = chat.UserID,
+                Name = user.Name
+            };
+
             return chat;
         }
 
-        public Message AddMessage(Message newMessage)
+        public ChatMessage AddMessage(ChatMessage newMessage)
         {
-            var message = new Message
+            var message = new ChatMessage
             {
                 ID = _messageId++,
-                Content = newMessage.Content,
+                ChatID = newMessage.ChatID,
                 UserID = newMessage.UserID,
+                Message = newMessage.Message,
                 Created = DateTime.Now
             };
 
             _messages.Add(message);
+
+            // Populate user.
+            var user = Users.FindByID(message.UserID);
+            message.User = new SimpleUser
+            {
+                ID = message.UserID,
+                Name = user.Name
+            };
 
             return message;
         }
@@ -169,7 +186,7 @@ namespace CoreChat.Models
             };
         }
 
-        public PagedResults<Message> GetMessages(int chatId, int page, int limit)
+        public PagedResults<ChatMessage> GetMessages(int chatId, int page, int limit)
         {
             if (page < 1)
             {
@@ -181,7 +198,7 @@ namespace CoreChat.Models
                 limit = 0;
             }
 
-            IEnumerable<Message> allRecords = _messages.OrderByDescending(x => x.ID)
+            IEnumerable<ChatMessage> allRecords = _messages.OrderByDescending(x => x.ID)
                 .Where(x => x.ChatID == chatId);
 
             // Set some defaults for pagination (assumes limit = 0).
@@ -221,7 +238,7 @@ namespace CoreChat.Models
                 Limit = limit
             };
 
-            return new PagedResults<Message>
+            return new PagedResults<ChatMessage>
             {
                 Data = pagedRecords,
                 Pagination = pagination

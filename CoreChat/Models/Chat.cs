@@ -11,7 +11,7 @@ namespace CoreChat.Models
         public int UserID { get; set; }
         public string Name { get; set; }
         public DateTime Created { get; set; }
-        public Message LastMessage { get; set; }
+        public ChatMessage LastMessage { get; set; }
         public SimpleUser User { get; set; }
     }
 

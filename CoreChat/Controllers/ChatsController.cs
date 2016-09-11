@@ -43,7 +43,7 @@ namespace CoreChat.Controllers
 
         [HttpGet("{chatId}/messages")]
         [BearerToken]
-        public IActionResult Messages(int chatId, int page, int limit)
+        public IActionResult GetMessages(int chatId, int page, int limit)
         {
             string token = User.FindFirst("token").Value;
             User user = Users.FindByToken(token);
@@ -63,9 +63,55 @@ namespace CoreChat.Controllers
             });
         }
 
-        [HttpPost]
-        public void Post([FromBody]string value)
+        [HttpPost("Index")]
+        [BearerToken]
+        public IActionResult AddChat([FromBody]string name)
         {
+            string token = User.FindFirst("token").Value;
+            User user = Users.FindByToken(token);
+
+            if (user == null)
+            {
+                return Unauthorized();
+            }
+
+            var chat = Chats.AddChat(new Chat
+            {
+                UserID = user.ID,
+                Name = name
+            });
+
+            return Json(new
+            {
+                success = true,
+                data = chat
+            });
+        }
+
+        [HttpPost("{chatId}/messages")]
+        [BearerToken]
+        public IActionResult AddMessage(int chatId, [FromBody] ChatMessage newMessage)
+        {
+            string token = User.FindFirst("token").Value;
+            User user = Users.FindByToken(token);
+
+            if (user == null)
+            {
+                return Unauthorized();
+            }
+
+            var message = Chats.AddMessage(new ChatMessage
+            {
+                ChatID = chatId,
+                UserID = user.ID,
+                Message = newMessage.Message
+            });
+
+            return Json(new
+            {
+                success = true,
+                data = message
+            });
         }
     }
 }
