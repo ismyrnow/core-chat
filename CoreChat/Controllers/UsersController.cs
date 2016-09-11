@@ -4,6 +4,7 @@ using System.Linq;
 using System.Threading.Tasks;
 using Microsoft.AspNetCore.Mvc;
 using CoreChat.Models;
+using CoreChat.Filters;
 
 // For more information on enabling Web API for empty projects, visit http://go.microsoft.com/fwlink/?LinkID=397860
 
@@ -54,44 +55,30 @@ namespace CoreChat.Controllers
         }
 
         [HttpGet("Me")]
+        [BearerToken]
         public IActionResult ViewMe()
         {
-            User user;
-            try
+            string token = User.FindFirst("token").Value;
+            User user = Users.FindByToken(token);
+
+            if (user == null)
             {
-                string auth = Request.Headers["Authorization"];
-                var token = auth.Replace("Bearer ", "");
-                user = Users.FindByToken(token);
-                if (user == null)
-                {
-                    throw new Exception();
-                }
-            }
-            catch
-            {
-                return new UnauthorizedResult();
+                return Unauthorized();
             }
 
             return Json(BuildUserResponse(user));
         }
 
         [HttpPut("Me")]
+        [BearerToken]
         public IActionResult EditMe([FromBody] RegisterUser edit)
         {
-            User user;
-            try
+            string token = User.FindFirst("token").Value;
+            User user = Users.FindByToken(token);
+
+            if (user == null)
             {
-                string auth = Request.Headers["Authorization"];
-                var token = auth.Replace("Bearer ", "");
-                user = Users.FindByToken(token);
-                if (user == null)
-                {
-                    throw new Exception();
-                }
-            }
-            catch
-            {
-                return new UnauthorizedResult();
+                return Unauthorized();
             }
 
             user.Name = edit.Name;
